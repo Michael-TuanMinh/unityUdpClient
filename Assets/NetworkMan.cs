@@ -9,12 +9,17 @@ using System.Net;
 public class NetworkMan : MonoBehaviour
 {
     public UdpClient udp;
+
+    private bool spawned = false;
+    private List<GameObject> cubes = new List<GameObject>();
+    private List<Player> toBeSpawned = new List<Player>();
+
     // Start is called before the first frame update
     void Start()
     {
         udp = new UdpClient();
         
-        udp.Connect("PUT_IP_ADDRESS_HERE",12345);
+        udp.Connect("3.15.19.251", 12345);
 
         Byte[] sendBytes = Encoding.ASCII.GetBytes("connect");
       
@@ -25,29 +30,38 @@ public class NetworkMan : MonoBehaviour
         InvokeRepeating("HeartBeat", 1, 1);
     }
 
-    void OnDestroy(){
+    void OnDestroy()
+    {
         udp.Dispose();
     }
 
 
-    public enum commands{
+    public enum commands
+    {
         NEW_CLIENT,
         UPDATE
     };
     
     [Serializable]
-    public class Message{
+    public class Message
+    {
         public commands cmd;
+        public Player player;
     }
-    
+
     [Serializable]
-    public class Player{
+    public class receivedColor
+    {
+        public float R;
+        public float G;
+        public float B;
+    }
+
+    [Serializable]
+    public class Player
+    {
         public string id;
-        public struct receivedColor{
-            public float R;
-            public float G;
-            public float B;
-        }
+       
         public receivedColor color;        
     }
 
@@ -57,13 +71,16 @@ public class NetworkMan : MonoBehaviour
     }
 
     [Serializable]
-    public class GameState{
+    public class GameState
+    {
         public Player[] players;
     }
 
     public Message latestMessage;
     public GameState lastestGameState;
-    void OnReceived(IAsyncResult result){
+
+    void OnReceived(IAsyncResult result)
+    {
         // this is what had been passed into BeginReceive as the second parameter:
         UdpClient socket = result.AsyncState as UdpClient;
         
@@ -75,22 +92,27 @@ public class NetworkMan : MonoBehaviour
         
         // do what you'd like with `message` here:
         string returnData = Encoding.ASCII.GetString(message);
-        Debug.Log("Got this: " + returnData);
+        //Debug.Log("Got this: " + returnData);
         
         latestMessage = JsonUtility.FromJson<Message>(returnData);
-        try{
-            switch(latestMessage.cmd){
+        try
+        {
+            switch(latestMessage.cmd)
+            {
                 case commands.NEW_CLIENT:
+                    toBeSpawned.Add(latestMessage.player);
                     break;
                 case commands.UPDATE:
                     lastestGameState = JsonUtility.FromJson<GameState>(returnData);
+                   
                     break;
                 default:
                     Debug.Log("Error");
                     break;
             }
         }
-        catch (Exception e){
+        catch (Exception e)
+        {
             Debug.Log(e.ToString());
         }
         
@@ -98,24 +120,52 @@ public class NetworkMan : MonoBehaviour
         socket.BeginReceive(new AsyncCallback(OnReceived), socket);
     }
 
-    void SpawnPlayers(){
+    void SpawnPlayers()
+    {
+        
+        if(toBeSpawned.Count > 0)
+        {
+            for (int i = 0; i < toBeSpawned.Count; i++)
+            {
+                GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                cube.name = latestMessage.player.id;
+                cubes.Add(cube);
+            }
 
+            toBeSpawned.Clear();
+        }
+     
     }
 
-    void UpdatePlayers(){
-
+    void UpdatePlayers()
+    {
+        for (int i = 0; i < lastestGameState.players.Length; i++)
+        {
+            foreach(GameObject c in cubes)
+            {
+                if(c.name == lastestGameState.players[i].id)
+                {
+                    Color newColor = new Color(lastestGameState.players[i].color.R, lastestGameState.players[i].color.G, lastestGameState.players[i].color.B);
+                    c.GetComponent<Renderer>().material.color = newColor;
+                }
+            }
+            
+        }
     }
 
-    void DestroyPlayers(){
-
+    void DestroyPlayers()
+    {
+      
     }
     
-    void HeartBeat(){
+    void HeartBeat()
+    {
         Byte[] sendBytes = Encoding.ASCII.GetBytes("heartbeat");
         udp.Send(sendBytes, sendBytes.Length);
     }
 
-    void Update(){
+    void Update()
+    {
         SpawnPlayers();
         UpdatePlayers();
         DestroyPlayers();
