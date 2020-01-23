@@ -9,8 +9,6 @@ using System.Net;
 public class NetworkMan : MonoBehaviour
 {
     public UdpClient udp;
-
-    private bool spawned = false;
     private List<GameObject> cubes = new List<GameObject>();
     private List<Player> toBeSpawned = new List<Player>();
 
@@ -41,7 +39,15 @@ public class NetworkMan : MonoBehaviour
         NEW_CLIENT,
         UPDATE
     };
-    
+
+    [Serializable]
+    public class Player
+    {
+        public string id;
+
+        public receivedColor color;
+    }
+
     [Serializable]
     public class Message
     {
@@ -55,14 +61,6 @@ public class NetworkMan : MonoBehaviour
         public float R;
         public float G;
         public float B;
-    }
-
-    [Serializable]
-    public class Player
-    {
-        public string id;
-       
-        public receivedColor color;        
     }
 
     [Serializable]
@@ -122,16 +120,16 @@ public class NetworkMan : MonoBehaviour
 
     void SpawnPlayers()
     {
-        
         if(toBeSpawned.Count > 0)
         {
             for (int i = 0; i < toBeSpawned.Count; i++)
             {
                 GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                cube.name = latestMessage.player.id;
+                cube.name = toBeSpawned[i].id;
+                cube.transform.position = new Vector3(cubes.Count * 2, 0, 0);
+                cube.GetComponent<Renderer>().material.color = Color.white;
                 cubes.Add(cube);
             }
-
             toBeSpawned.Clear();
         }
      
