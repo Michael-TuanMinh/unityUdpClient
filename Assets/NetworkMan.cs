@@ -9,8 +9,10 @@ using System.Net;
 public class NetworkMan : MonoBehaviour
 {
     public UdpClient udp;
-    private List<GameObject> cubes = new List<GameObject>();
+    private List<GameObject> cubes = new List<GameObject>(); // all the cubes that exist in the scene
     private List<Player> toBeSpawned = new List<Player>();
+    private List<Player> toBeDestroyed = new List<Player>();
+    private List<Player> spawnedPlayers = new List<Player>();
 
     // Start is called before the first frame update
     void Start()
@@ -37,7 +39,8 @@ public class NetworkMan : MonoBehaviour
     public enum commands
     {
         NEW_CLIENT,
-        UPDATE
+        UPDATE,
+        DESTROY
     };
 
     [Serializable]
@@ -53,6 +56,7 @@ public class NetworkMan : MonoBehaviour
     {
         public commands cmd;
         public Player player;
+        public Player[] connectedPlayers;
     }
 
     [Serializable]
@@ -90,7 +94,7 @@ public class NetworkMan : MonoBehaviour
         
         // do what you'd like with `message` here:
         string returnData = Encoding.ASCII.GetString(message);
-        //Debug.Log("Got this: " + returnData);
+        Debug.Log("Got this: " + returnData);
         
         latestMessage = JsonUtility.FromJson<Message>(returnData);
         try
@@ -98,11 +102,21 @@ public class NetworkMan : MonoBehaviour
             switch(latestMessage.cmd)
             {
                 case commands.NEW_CLIENT:
-                    toBeSpawned.Add(latestMessage.player);
+
+                    for (int i = 0; i < latestMessage.connectedPlayers.Length; i++)
+                    {
+                        if(!IsSpawned(latestMessage.connectedPlayers[i]))
+                        toBeSpawned.Add(latestMessage.connectedPlayers[i]);
+                    }
                     break;
                 case commands.UPDATE:
                     lastestGameState = JsonUtility.FromJson<GameState>(returnData);
                    
+                    break;
+
+                case commands.DESTROY:
+                    toBeDestroyed.Add(latestMessage.player);
+                    
                     break;
                 default:
                     Debug.Log("Error");
@@ -127,8 +141,8 @@ public class NetworkMan : MonoBehaviour
                 GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 cube.name = toBeSpawned[i].id;
                 cube.transform.position = new Vector3(cubes.Count * 2, 0, 0);
-                cube.GetComponent<Renderer>().material.color = Color.white;
                 cubes.Add(cube);
+                spawnedPlayers.Add(toBeSpawned[i]);
             }
             toBeSpawned.Clear();
         }
@@ -151,15 +165,41 @@ public class NetworkMan : MonoBehaviour
         }
     }
 
+
     void DestroyPlayers()
     {
-      
+      if(toBeDestroyed.Count > 0)
+        {
+            for (int i = 0; i < toBeDestroyed.Count; i++)
+            {
+                for (int j = 0; j < cubes.Count; j++)
+                {
+                    if (cubes[j].name == toBeDestroyed[i].id) cubes.RemoveAt(j);
+                }
+
+                Destroy(GameObject.Find(toBeDestroyed[i].id));
+            }
+
+            toBeDestroyed.Clear();
+
+           
+        }
     }
     
     void HeartBeat()
     {
         Byte[] sendBytes = Encoding.ASCII.GetBytes("heartbeat");
         udp.Send(sendBytes, sendBytes.Length);
+    }
+
+    private bool IsSpawned(Player p)
+    {
+        for (int i = 0; i < spawnedPlayers.Count; i++)
+        {
+            if (p.id == spawnedPlayers[i].id) return true;
+        }
+
+        return false;
     }
 
     void Update()
