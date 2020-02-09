@@ -13,6 +13,7 @@ public class NetworkMan : MonoBehaviour
     private List<Player> toBeSpawned = new List<Player>();
     private List<Player> toBeDestroyed = new List<Player>();
     private List<Player> spawnedPlayers = new List<Player>();
+    
 
     // Start is called before the first frame update
     void Start()
@@ -44,11 +45,23 @@ public class NetworkMan : MonoBehaviour
     };
 
     [Serializable]
+    public class PlayerTransform
+    {
+        public Vector3 position;
+
+        public Vector3 rotation;
+    }
+
+    [Serializable]
     public class Player
     {
         public string id;
 
         public receivedColor color;
+
+        public Vector3 position;
+
+        public Vector3 rotation;
     }
 
     [Serializable]
@@ -94,7 +107,7 @@ public class NetworkMan : MonoBehaviour
         
         // do what you'd like with `message` here:
         string returnData = Encoding.ASCII.GetString(message);
-        Debug.Log("Got this: " + returnData);
+        //Debug.Log("Got this: " + returnData);
         
         latestMessage = JsonUtility.FromJson<Message>(returnData);
         try
@@ -140,7 +153,7 @@ public class NetworkMan : MonoBehaviour
             {
                 GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 cube.name = toBeSpawned[i].id;
-                cube.transform.position = new Vector3(cubes.Count * 2, 0, 0);
+                cube.AddComponent<PlayerController>();
                 cubes.Add(cube);
                 spawnedPlayers.Add(toBeSpawned[i]);
             }
@@ -159,6 +172,8 @@ public class NetworkMan : MonoBehaviour
                 {
                     Color newColor = new Color(lastestGameState.players[i].color.R, lastestGameState.players[i].color.G, lastestGameState.players[i].color.B);
                     c.GetComponent<Renderer>().material.color = newColor;
+                    c.transform.position = lastestGameState.players[i].position;
+                    c.transform.eulerAngles = lastestGameState.players[i].rotation;
                 }
             }
             
@@ -186,9 +201,20 @@ public class NetworkMan : MonoBehaviour
         }
     }
     
-    void HeartBeat()
+    private void HeartBeat()
     {
         Byte[] sendBytes = Encoding.ASCII.GetBytes("heartbeat");
+        udp.Send(sendBytes, sendBytes.Length);
+    }
+
+    public void UpdateTransformToServer(Vector3 p, Vector3 r)
+    {
+        PlayerTransform playerTransform = new PlayerTransform();
+        playerTransform.position = p;
+        playerTransform.rotation = r;
+
+        string jsonString = JsonUtility.ToJson(playerTransform);
+        Byte[] sendBytes = Encoding.ASCII.GetBytes(jsonString);
         udp.Send(sendBytes, sendBytes.Length);
     }
 
@@ -202,7 +228,7 @@ public class NetworkMan : MonoBehaviour
         return false;
     }
 
-    void Update()
+    private void Update()
     {
         SpawnPlayers();
         UpdatePlayers();
