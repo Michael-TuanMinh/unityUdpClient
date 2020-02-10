@@ -16,9 +16,7 @@ public class PlayerController : MonoBehaviour
     
     void Start()
     {
-        networkManager = GameObject.FindObjectOfType<NetworkMan>();
-        //currentPosition = this.transform.position;
-        //currentRotation = this.transform.rotation.eulerAngles;
+        networkManager = FindObjectOfType<NetworkMan>();
         InvokeRepeating("UpdateTransformToServer", 1, 0.03f);
     }
 
