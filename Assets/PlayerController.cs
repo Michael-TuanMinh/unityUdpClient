@@ -6,7 +6,7 @@ public class PlayerController : MonoBehaviour
 {
     [HideInInspector]
     public Vector3 currentPosition;
-    private Vector3 currentRotation;
+    public Vector3 currentRotation;
     private NetworkMan networkManager;
 
     [SerializeField] float speed = 1;
@@ -17,7 +17,8 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         networkManager = GameObject.FindObjectOfType<NetworkMan>();
-
+        //currentPosition = this.transform.position;
+        //currentRotation = this.transform.rotation.eulerAngles;
         InvokeRepeating("UpdateTransformToServer", 1, 0.03f);
     }
 

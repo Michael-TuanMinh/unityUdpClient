@@ -153,7 +153,10 @@ public class NetworkMan : MonoBehaviour
             {
                 GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 cube.name = toBeSpawned[i].id;
+                cube.transform.position = new Vector3(cubes.Count * 2, 0, 0);
                 cube.AddComponent<PlayerController>();
+                cube.GetComponent<PlayerController>().currentRotation = toBeSpawned[i].position;
+                cube.GetComponent<PlayerController>().currentRotation = toBeSpawned[i].rotation;
                 cubes.Add(cube);
                 spawnedPlayers.Add(toBeSpawned[i]);
             }
@@ -172,6 +175,8 @@ public class NetworkMan : MonoBehaviour
                 {
                     Color newColor = new Color(lastestGameState.players[i].color.R, lastestGameState.players[i].color.G, lastestGameState.players[i].color.B);
                     c.GetComponent<Renderer>().material.color = newColor;
+                    //c.GetComponent<PlayerController>().currentPosition = lastestGameState.players[i].position;
+                    //c.GetComponent<PlayerController>().currentRotation = lastestGameState.players[i].rotation;
                     c.transform.position = lastestGameState.players[i].position;
                     c.transform.eulerAngles = lastestGameState.players[i].rotation;
                 }
