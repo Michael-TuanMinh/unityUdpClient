@@ -17,7 +17,9 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         networkManager = FindObjectOfType<NetworkMan>();
-        InvokeRepeating("UpdateTransformToServer", 1, 0.03f);
+
+        if (networkManager.myID == this.name)
+            InvokeRepeating("UpdateTransformToServer", 1, 0.03f);
     }
 
    

@@ -13,7 +13,9 @@ public class NetworkMan : MonoBehaviour
     private List<Player> toBeSpawned = new List<Player>();
     private List<Player> toBeDestroyed = new List<Player>();
     private List<Player> spawnedPlayers = new List<Player>();
-    
+
+    [HideInInspector]
+    public string myID;
 
     // Start is called before the first frame update
     void Start()
@@ -119,7 +121,11 @@ public class NetworkMan : MonoBehaviour
                     for (int i = 0; i < latestMessage.connectedPlayers.Length; i++)
                     {
                         if(!IsSpawned(latestMessage.connectedPlayers[i]))
-                        toBeSpawned.Add(latestMessage.connectedPlayers[i]);
+                        {
+                            toBeSpawned.Add(latestMessage.connectedPlayers[i]);
+                            if (spawnedPlayers.Count == 0) myID = latestMessage.connectedPlayers[i].id;
+                        }
+  
                     }
                     break;
                 case commands.UPDATE:
@@ -154,7 +160,7 @@ public class NetworkMan : MonoBehaviour
                 GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 cube.name = toBeSpawned[i].id;
                 cube.AddComponent<PlayerController>();
-                cube.GetComponent<PlayerController>().currentRotation = toBeSpawned[i].position;
+                cube.GetComponent<PlayerController>().currentPosition = toBeSpawned[i].position;
                 cube.GetComponent<PlayerController>().currentRotation = toBeSpawned[i].rotation;
                 cubes.Add(cube);
                 spawnedPlayers.Add(toBeSpawned[i]);
